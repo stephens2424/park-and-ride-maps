@@ -1,0 +1,13 @@
+@import "compass_twitter_bootstrap";
+.mapspace {
+  @include makeColumn(9);
+  height: 500px;
+}
+
+.directions {
+  @include makeColumn(3);
+}
+
+.mapcontainer {
+  @include makeRow();
+}
