@@ -17,6 +17,7 @@ define(['google'], function() {
       });
     }
 
+    this.currentDisambiguation = $.Deferred().resolve();
     this.geocoder = new google.maps.Geocoder();
     this.directionsService = new google.maps.DirectionsService();
     this.placesService = new google.maps.places.PlacesService(this.map);
@@ -49,11 +50,35 @@ define(['google'], function() {
       }
     });
 
-    return deferred.pipe(this.disambiguateLocations);
+    return deferred.pipe($.proxy(this.disambiguateLocations,this));
   }
 
   ComboMap.prototype.disambiguateLocations = function (locationArray) {
-    return locationArray[0];
+    var deferred = $.Deferred(),
+        self = this,
+        markers = [];
+
+    this.currentDisambiguation.done(function () {
+      self.currentDisambiguation = deferred;
+      var $ul = $('<ul>').appendTo('.disambiguation');
+
+      $.each(locationArray, function (i,location) {
+        $('<li>').text(location.name ? location.name : location.formatted_address).addClass('choice').appendTo($ul);
+        markers.push(new google.maps.Marker({
+          map: self.map,
+          position: location.geometry.location
+        }));
+      });
+
+      $('.disambiguation').on('click','.choice',function () {
+        var index = $(this).index();
+        $('.disambiguation').empty();
+        $.map(markers,function (e) { e.setMap(null); } );
+        deferred.resolve(locationArray[index]);
+      });
+    });
+
+    return deferred;
   }
 
   ComboMap.prototype.searchParkAndRide = function (origin, destination) {
@@ -64,8 +89,7 @@ define(['google'], function() {
 
     var request = {
       radius: distance,
-      types: ["bus_station", "parking", "subway_station", "train_station"],
-      keyword: "Park and Ride",
+      types: ["bus_station", "subway_station", "train_station", "transit_station"],
       rankBy: google.maps.places.RankBy.Prominence
     },
         originRequest = $.Deferred(),
@@ -84,6 +108,7 @@ define(['google'], function() {
       $.each(originResults, function (i, e) {
         originResultsObj[e.id] = e;
       });
+      console.log(originResultsObj);
       $.each(destinationResults, function (i, e) {
         if (originResultsObj.hasOwnProperty(e.id)) {
           commonResults.push(e);
@@ -94,18 +119,14 @@ define(['google'], function() {
   }
 
   ComboMap.prototype.getDirections = function (origin,destination) {
-    console.log("origin:" + origin, "; destination:" + destination);
 
     var self = this,
         directionsDeferred = $.Deferred();
     $.when(this.getLocation(origin),this.getLocation(destination)).done(function (originResult, destinationResult) {
 
-      console.log(originResult);
-      console.log(destinationResult);
 
-      self.searchParkAndRide(originResult, destinationResult).pipe(self.disambiguateLocations).done(function (parkAndRide) {
+      self.searchParkAndRide(originResult, destinationResult).pipe($.proxy(self.disambiguateLocations,self)).done(function (parkAndRide) {
 
-        console.log(parkAndRide);
 
         var legOneRequest = {
           origin: originResult.geometry.location,
