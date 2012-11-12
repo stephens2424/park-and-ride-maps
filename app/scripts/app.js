@@ -108,9 +108,16 @@ define(['../components/requirejs-plugins/lib/text!error.html','google'], functio
     this.currentDisambiguation = $.Deferred().resolve();
   }
 
+  ComboMap.prototype.clearDirections = function () {
+    this.legOneDirections.setMap(null);
+    this.legTwoDirections.setMap(null);
+    $('.directionsResult').empty();
+  }
+
   ComboMap.prototype.reset = function () {
     this.clearMarkers();
     this.clearDisambiguation();
+    this.clearDirections();
   }
 
   ComboMap.prototype.searchParkAndRide = function (origin, destination) {
@@ -188,6 +195,8 @@ define(['../components/requirejs-plugins/lib/text!error.html','google'], functio
           $.when(legOneDeferred, legTwoDeferred).done(function (legOneResult,legTwoResult) {
             self.legOneDirections.setDirections(legOneResult);
             self.legTwoDirections.setDirections(legTwoResult);
+            self.legOneDirections.setMap(self.map);
+            self.legTwoDirections.setMap(self.map);
 
             self.markers.push(new google.maps.Marker({
               icon: "http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=A|68C04C|000000",
