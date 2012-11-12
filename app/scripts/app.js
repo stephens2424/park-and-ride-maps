@@ -214,6 +214,7 @@ define(['../components/requirejs-plugins/lib/text!error.html','google'], functio
               position: destinationResult.geometry.location
             }));
 
+            self.map.panToBounds(legOneResult.routes[0].bounds.union(legTwoResult.routes[0].bounds));
             directionsDeferred.resolve(legOneResult, legTwoResult);
           });
       }).fail(function (parkAndRide) {
