@@ -8,6 +8,10 @@ The data sources and searching could use some work, and I'm sure you can find so
 
 I'm hosting it on my website: [http://stephensearles.com/parkandride/](http://stephensearles.com/parkandride/). Please be courteous, though, I'm under the free use constraints of the Google APIs.
 
+# Notes on development
+
+This project is developed using [Yeoman](http://yeoman.io/).
+
 ### License
 
 GPL 3.0 for now. Contact me if you'd like to license this code some other way.
