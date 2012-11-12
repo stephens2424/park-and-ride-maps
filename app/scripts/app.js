@@ -1,4 +1,4 @@
-define(['google'], function() {
+define(['../components/requirejs-plugins/lib/text!error.html','google'], function(errorHTML) {
 
   var ComboMap = function (node) {
 
@@ -21,15 +21,18 @@ define(['google'], function() {
     this.geocoder = new google.maps.Geocoder();
     this.directionsService = new google.maps.DirectionsService();
     this.placesService = new google.maps.places.PlacesService(this.map);
+    this.markers = [];
     self.legOneDirections = new google.maps.DirectionsRenderer({
       map: self.map,
       routeIndex: 0,
-      panel: $('.directionsResult').get(0)
+      panel: $('.directionsResult').get(0),
+      suppressMarkers: true
     });
     self.legTwoDirections = new google.maps.DirectionsRenderer({
       map: self.map,
       routeIndex: 1,
-      panel: $('.directionsResult').get(0)
+      panel: $('.directionsResult').get(0),
+      suppressMarkers: true
     });
   };
 
@@ -61,24 +64,32 @@ define(['google'], function() {
     this.currentDisambiguation.done(function () {
       self.currentDisambiguation = deferred;
       var $ul = $('<ul>').appendTo('.disambiguation');
+      var letter = 'A';
 
       $.each(locationArray, function (i,location) {
-        $('<li>').text(location.name ? location.name : location.formatted_address).addClass('choice').appendTo($ul);
-        markers.push(new google.maps.Marker({
+        $('<li>').text(letter + " " + (location.name ? location.name : location.formatted_address)).addClass('choice').appendTo($ul);
+        self.markers.push(new google.maps.Marker({
+          icon: "http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=" + letter + "|FF0000|000000",
           map: self.map,
           position: location.geometry.location
         }));
+        letter = String.fromCharCode(letter.charCodeAt() + 1);
       });
 
       $('.disambiguation').on('click','.choice',function () {
         var index = $(this).index();
         $('.disambiguation').empty();
-        $.map(markers,function (e) { e.setMap(null); } );
+        self.clearMarkers();
         deferred.resolve(locationArray[index]);
       });
     });
 
     return deferred;
+  }
+
+  ComboMap.prototype.clearMarkers = function () {
+    $.map(this.markers,function (e) { e.setMap(null); } );
+    this.markers = [];
   }
 
   ComboMap.prototype.searchParkAndRide = function (origin, destination) {
@@ -114,6 +125,9 @@ define(['google'], function() {
           commonResults.push(e);
         }
       });
+      if (commonResults.length == 0) {
+        return $.Deferred().reject(commonResults);
+      }
       return commonResults;
     });
   }
@@ -122,44 +136,74 @@ define(['google'], function() {
 
     var self = this,
         directionsDeferred = $.Deferred();
+    self.clearMarkers();
     $.when(this.getLocation(origin),this.getLocation(destination)).done(function (originResult, destinationResult) {
 
+      self.searchParkAndRide(originResult, destinationResult)
+        .pipe($.proxy(self.disambiguateLocations,self))
+        .done(function (parkAndRide) {
 
-      self.searchParkAndRide(originResult, destinationResult).pipe($.proxy(self.disambiguateLocations,self)).done(function (parkAndRide) {
 
+          var legOneRequest = {
+            origin: originResult.geometry.location,
+            destination: parkAndRide.geometry.location,
+            travelMode: google.maps.TravelMode.DRIVING
+          },
+            legTwoRequest = {
+            origin: parkAndRide.geometry.location,
+            destination: destinationResult.geometry.location,
+            travelMode: google.maps.TravelMode.TRANSIT
+          },
+            legOneDeferred = $.Deferred(),
+            legTwoDeferred = $.Deferred();
 
-        var legOneRequest = {
-          origin: originResult.geometry.location,
-          destination: parkAndRide.geometry.location,
-          travelMode: google.maps.TravelMode.DRIVING
-        },
-          legTwoRequest = {
-          origin: parkAndRide.geometry.location,
-          destination: destinationResult.geometry.location,
-          travelMode: google.maps.TravelMode.TRANSIT
-        },
-          legOneDeferred = $.Deferred(),
-          legTwoDeferred = $.Deferred();
+          self.directionsService.route(legOneRequest, function (result, status) {
+            legOneDeferred.resolve(result);
+          });
+          self.directionsService.route(legTwoRequest, function (result, status) {
+            legTwoDeferred.resolve(result);
+          });
 
-        self.directionsService.route(legOneRequest, function (result, status) {
-          legOneDeferred.resolve(result);
-        });
-        self.directionsService.route(legTwoRequest, function (result, status) {
-          legTwoDeferred.resolve(result);
-        });
+          $.when(legOneDeferred, legTwoDeferred).done(function (legOneResult,legTwoResult) {
+            self.legOneDirections.setDirections(legOneResult);
+            self.legTwoDirections.setDirections(legTwoResult);
 
-        $.when(legOneDeferred, legTwoDeferred).done(function (legOneResult,legTwoResult) {
-          self.legOneDirections.setDirections(legOneResult);
-          self.legTwoDirections.setDirections(legTwoResult);
-          directionsDeferred.resolve(legOneResult, legTwoResult);
-        });
+            self.markers.push(new google.maps.Marker({
+              icon: "http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=A|68C04C|000000",
+              map: self.map,
+              position: originResult.geometry.location
+            }));
+            self.markers.push(new google.maps.Marker({
+              icon: "http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=B|68C04C|000000",
+              map: self.map,
+              position: parkAndRide.geometry.location
+            }));
+            self.markers.push(new google.maps.Marker({
+              icon: "http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=C|68C04C|000000",
+              map: self.map,
+              position: destinationResult.geometry.location
+            }));
+
+            directionsDeferred.resolve(legOneResult, legTwoResult);
+          });
+      }).fail(function (parkAndRide) {
+        if (parkAndRide.length == 0) {
+          self.showError("Sorry, couldn't find a good park and ride station for you.");
+        } else {
+          self.showError("Sorry, something bad happened.");
+        }
       });
     }).fail(function (originResult, destinationResult) {
-      console.log("bad shit");
-      debugger;
+      self.showError("Sorry, couldn't find one of your locations");
     });
 
     return directionsDeferred;
+  }
+
+  ComboMap.prototype.showError = function (message) {
+    var error = $(errorHTML);
+    error.find('#errorMessage').text(message);
+    error.modal();
   }
 
   ComboMap.prototype.google = google;
