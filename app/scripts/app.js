@@ -125,7 +125,8 @@ define(['../components/requirejs-plugins/lib/text!error.html','google'], functio
 
     var distance = google.maps.geometry.spherical.computeDistanceBetween(
         origin.geometry.location,
-        destination.geometry.location);
+        destination.geometry.location),
+        self = this;
 
     var request = {
       radius: distance,
@@ -133,13 +134,25 @@ define(['../components/requirejs-plugins/lib/text!error.html','google'], functio
       rankBy: google.maps.places.RankBy.Prominence
     },
         originRequest = $.Deferred(),
-        destinationRequest = $.Deferred();
+        destinationRequest = $.Deferred(),
+        originResult = [],
+        destinationResult = [];
 
-    this.placesService.nearbySearch($.extend({}, request, {location: origin.geometry.location}), function (result, status) {
-      originRequest.resolve(result);
+    this.placesService.nearbySearch($.extend({}, request, {location: origin.geometry.location}), function (result, status, pagination) {
+      originResult.push.apply(originResult,result);
+      if (pagination.hasNextPage) {
+        pagination.nextPage();
+      } else {
+        originRequest.resolve(originResult);
+      }
     });
-    this.placesService.nearbySearch($.extend({}, request, {location: destination.geometry.location}), function (result, status) {
-      destinationRequest.resolve(result);
+    this.placesService.nearbySearch($.extend({}, request, {location: destination.geometry.location}), function (result, status, pagination) {
+      destinationResult.push.apply(destinationResult,result);
+      if (pagination.hasNextPage) {
+        pagination.nextPage();
+      } else {
+        destinationRequest.resolve(destinationResult);
+      }
     });
 
     return $.when(originRequest, destinationRequest).pipe(function (originResults, destinationResults) {
