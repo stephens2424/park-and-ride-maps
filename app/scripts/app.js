@@ -63,6 +63,14 @@ define(['../components/requirejs-plugins/lib/text!error.html','google'], functio
 
     this.currentDisambiguation.done(function () {
       self.currentDisambiguation = deferred;
+      if (locationArray.length == 1) {
+        deferred.resolve(locationArray[0]);
+        return;
+      } else if (locationArray.length == 0) {
+        deferred.reject("No locations");
+        return;
+      }
+
       var $ul = $('<ul>').appendTo('.disambiguation');
       var letter = 'A';
 
