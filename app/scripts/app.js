@@ -161,7 +161,6 @@ define(['../components/requirejs-plugins/lib/text!error.html','google'], functio
       $.each(originResults, function (i, e) {
         originResultsObj[e.id] = e;
       });
-      console.log(originResultsObj);
       $.each(destinationResults, function (i, e) {
         if (originResultsObj.hasOwnProperty(e.id)) {
           commonResults.push(e);
