@@ -22,10 +22,7 @@ require(['app'], function(ComboMap) {
     var $form = $(this);
     var $inputs = $form.find('input');
 
-    map.getDirections($inputs.eq(0).val(),$inputs.eq(1).val()).done(function (legOne, legTwo) {
-      console.log(legOne);
-      console.log(legTwo);
-    });
+    map.getDirections($inputs.eq(0).val(),$inputs.eq(1).val());
     return false;
   });
 });

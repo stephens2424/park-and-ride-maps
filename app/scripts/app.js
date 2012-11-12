@@ -67,7 +67,7 @@ define(['../components/requirejs-plugins/lib/text!error.html','google'], functio
       var letter = 'A';
 
       $.each(locationArray, function (i,location) {
-        $('<li>').text(letter + " " + (location.name ? location.name : location.formatted_address)).addClass('choice').appendTo($ul);
+        $('<li>').text(letter + ". " + (location.name ? location.name : location.formatted_address)).addClass('choice').appendTo($ul);
         self.markers.push(new google.maps.Marker({
           icon: "http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=" + letter + "|FF0000|000000",
           map: self.map,
@@ -90,6 +90,19 @@ define(['../components/requirejs-plugins/lib/text!error.html','google'], functio
   ComboMap.prototype.clearMarkers = function () {
     $.map(this.markers,function (e) { e.setMap(null); } );
     this.markers = [];
+  }
+
+  ComboMap.prototype.clearDisambiguation = function () {
+    while (this.currentDisambiguation.state() == "pending") {
+      this.currentDisambiguation.reject("canceled");
+    }
+    $('.disambiguation').empty();
+    this.currentDisambiguation = $.Deferred().resolve();
+  }
+
+  ComboMap.prototype.reset = function () {
+    this.clearMarkers();
+    this.clearDisambiguation();
   }
 
   ComboMap.prototype.searchParkAndRide = function (origin, destination) {
@@ -136,7 +149,7 @@ define(['../components/requirejs-plugins/lib/text!error.html','google'], functio
 
     var self = this,
         directionsDeferred = $.Deferred();
-    self.clearMarkers();
+    self.reset();
     $.when(this.getLocation(origin),this.getLocation(destination)).done(function (originResult, destinationResult) {
 
       self.searchParkAndRide(originResult, destinationResult)
@@ -187,7 +200,8 @@ define(['../components/requirejs-plugins/lib/text!error.html','google'], functio
             directionsDeferred.resolve(legOneResult, legTwoResult);
           });
       }).fail(function (parkAndRide) {
-        if (parkAndRide.length == 0) {
+        if (parkAndRide == "canceled") {
+        } else if (parkAndRide.length == 0) {
           self.showError("Sorry, couldn't find a good park and ride station for you.");
         } else {
           self.showError("Sorry, something bad happened.");
