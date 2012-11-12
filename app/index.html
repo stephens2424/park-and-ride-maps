@@ -18,22 +18,25 @@
     </head>
     <body>
     <div class="container">
+      <div class="instructions">
           <h3>Park and Ride Directions</h3>
           <p>Enter in an origin and destination and this widget will attempt to give you a set of directions that has the two legs, the first driving directions and the second leg public transportation. This project was inspired by the opening of Expo Line in Los Angeles and the new park and ride stations along it. Unfortunately those stations and likely others uncover some holes in Google's data. I think we can try to fix it within the places database, but maybe we can use a second data source for park and ride stations. I'm open to suggestions and hope to improve this.</p>
           <p>This is an early version of a small weekend project, but give it a go. If you find any issues or would like to contribute, the project is on <a href="https://github.com/stephens2424/park-and-ride-maps">Github</a>.</p>
+        </div>
         <div class="mapcontainer">
-          <div class="mapspace"></div>
+        <div class="mapspace"></div>
           <div class="directions">
             <form action="javascript:void(0);">
               <label>From:</label><input type="text" />
               <label>To:</label><input type="text" />
               <div>
-                <button class="btn" >Search</button>
+                <button class="btn btn-primary" >Search</button>
               </div>
             </form>
             <div class="disambiguation"></div>
             <div class="directionsResult"></div>
             <div class="directionsResult"></div>
+          </div>
     </div>
 
         <!--[if lt IE 7]>

@@ -3,14 +3,40 @@
   height: 500px;
   width: 60%;
   margin-right: 10px;
-  float: left;
+  float: right;
 }
 
 .directions {
+
+  .disambiguation {
+    width: 35%;
+    ul {
+      margin: 0;
+      list-style-type: none;
+    }
+  }
+}
+
+.instructions {
 }
 
 .mapcontainer {
-  @include makeRow();
+  @include clearfix;
+  @extend .hero-unit;
+}
+
+.choice {
+  cursor: pointer;
+  background-color: #eee;
+  border-radius: 3px;
+  margin: 10 0px;
+  padding: 10px;
+  padding-left: 20px;
+  text-indent: -1.2em;
+}
+
+.choice:hover {
+  background-color: #ccc;
 }
 
 td img {

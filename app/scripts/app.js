@@ -71,6 +71,7 @@ define(['../components/requirejs-plugins/lib/text!error.html','google'], functio
         return;
       }
 
+      $('.disambiguation').text(locationArray.length + " results:");
       var $ul = $('<ul>').appendTo('.disambiguation');
       var letter = 'A';
 
