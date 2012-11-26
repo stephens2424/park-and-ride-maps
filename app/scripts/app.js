@@ -36,7 +36,7 @@ define(['../components/requirejs-plugins/lib/text!error.html','google'], functio
     });
   };
 
-  ComboMap.prototype.getLocation = function (query) {
+  ComboMap.prototype.getLocation = function (query, name) {
 
     var request = {
       address: query,
@@ -53,10 +53,13 @@ define(['../components/requirejs-plugins/lib/text!error.html','google'], functio
       }
     });
 
-    return deferred.pipe($.proxy(this.disambiguateLocations,this));
+    var disambiguation = $.proxy(this.disambiguateLocations,this);
+    return deferred.pipe(function (results) {
+      return disambiguation(results, name);
+    });
   }
 
-  ComboMap.prototype.disambiguateLocations = function (locationArray) {
+  ComboMap.prototype.disambiguateLocations = function (locationArray, message) {
     var deferred = $.Deferred(),
         self = this,
         markers = [];
@@ -71,7 +74,14 @@ define(['../components/requirejs-plugins/lib/text!error.html','google'], functio
         return;
       }
 
-      $('.disambiguation').text(locationArray.length + " results:");
+      if (message == null) {
+        message = "";
+      } else {
+        message += " ";
+      }
+      message += locationArray.length + " results:";
+
+      $('.disambiguation').text(message);
       var $ul = $('<ul>').appendTo('.disambiguation');
       var letter = 'A';
 
@@ -173,62 +183,94 @@ define(['../components/requirejs-plugins/lib/text!error.html','google'], functio
     });
   }
 
-  ComboMap.prototype.getDirections = function (origin,destination) {
+  ComboMap.prototype.getDirections = function (origin, destination, midpoint) {
+
+    if (midpoint == null || midpoint == "") {
+      return this.getDirectionsWithoutMidpoint(origin, destination);
+    }
+
+    var directionsDeferred = $.Deferred(),
+        self = this;
+    $.when(this.getLocation(origin, "Origin"), this.getLocation(destination, "Destination"), this.getLocation(midpoint, "Park and Ride location")).done(function (
+          originLocation,
+          destinationLocation,
+          midpointLocation) {
+      self.getDirectionsWithLocations(originLocation, destinationLocation, midpointLocation).done(function () {
+        directionsDeferred.resolve.apply(directionsDeferred, $.makeArray(arguments));
+      });
+    });
+
+    return directionsDeferred;
+  }
+
+  ComboMap.prototype.getDirectionsWithLocations = function (originLocation, destinationLocation, midpointLocation) {
+
+    var directionsDeferred = $.Deferred(),
+        self = this;
+    var legOneRequest = {
+      origin: originLocation.geometry.location,
+      destination: midpointLocation.geometry.location,
+      travelMode: google.maps.TravelMode.DRIVING
+    },
+      legTwoRequest = {
+      origin: midpointLocation.geometry.location,
+      destination: destinationLocation.geometry.location,
+      travelMode: google.maps.TravelMode.TRANSIT
+    },
+      legOneDeferred = $.Deferred(),
+      legTwoDeferred = $.Deferred();
+
+    self.directionsService.route(legOneRequest, function (result, status) {
+      legOneDeferred.resolve(result);
+    });
+    self.directionsService.route(legTwoRequest, function (result, status) {
+      legTwoDeferred.resolve(result);
+    });
+
+    $.when(legOneDeferred, legTwoDeferred).done(function (legOneResult,legTwoResult) {
+      self.legOneDirections.setDirections(legOneResult);
+      self.legTwoDirections.setDirections(legTwoResult);
+      self.legOneDirections.setMap(self.map);
+      self.legTwoDirections.setMap(self.map);
+
+      self.markers.push(new google.maps.Marker({
+        icon: "http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=A|68C04C|000000",
+        map: self.map,
+        position: originLocation.geometry.location
+      }));
+      self.markers.push(new google.maps.Marker({
+        icon: "http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=B|68C04C|000000",
+        map: self.map,
+        position: midpointLocation.geometry.location
+      }));
+      self.markers.push(new google.maps.Marker({
+        icon: "http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=C|68C04C|000000",
+        map: self.map,
+        position: destinationLocation.geometry.location
+      }));
+
+      self.map.panToBounds(legOneResult.routes[0].bounds.union(legTwoResult.routes[0].bounds));
+      directionsDeferred.resolve(legOneResult, legTwoResult);
+    });
+
+    return directionsDeferred;
+  }
+
+  ComboMap.prototype.getDirectionsWithoutMidpoint = function (origin, destination) {
 
     var self = this,
         directionsDeferred = $.Deferred();
     self.reset();
-    $.when(this.getLocation(origin),this.getLocation(destination)).done(function (originResult, destinationResult) {
 
+    $.when(this.getLocation(origin, "Origin"),this.getLocation(destination, "Destination")).done(function (originResult, destinationResult) {
+
+      var disambiguate = $.proxy(self.disambiguateLocations,self);
       self.searchParkAndRide(originResult, destinationResult)
-        .pipe($.proxy(self.disambiguateLocations,self))
-        .done(function (parkAndRide) {
-
-
-          var legOneRequest = {
-            origin: originResult.geometry.location,
-            destination: parkAndRide.geometry.location,
-            travelMode: google.maps.TravelMode.DRIVING
-          },
-            legTwoRequest = {
-            origin: parkAndRide.geometry.location,
-            destination: destinationResult.geometry.location,
-            travelMode: google.maps.TravelMode.TRANSIT
-          },
-            legOneDeferred = $.Deferred(),
-            legTwoDeferred = $.Deferred();
-
-          self.directionsService.route(legOneRequest, function (result, status) {
-            legOneDeferred.resolve(result);
-          });
-          self.directionsService.route(legTwoRequest, function (result, status) {
-            legTwoDeferred.resolve(result);
-          });
-
-          $.when(legOneDeferred, legTwoDeferred).done(function (legOneResult,legTwoResult) {
-            self.legOneDirections.setDirections(legOneResult);
-            self.legTwoDirections.setDirections(legTwoResult);
-            self.legOneDirections.setMap(self.map);
-            self.legTwoDirections.setMap(self.map);
-
-            self.markers.push(new google.maps.Marker({
-              icon: "http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=A|68C04C|000000",
-              map: self.map,
-              position: originResult.geometry.location
-            }));
-            self.markers.push(new google.maps.Marker({
-              icon: "http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=B|68C04C|000000",
-              map: self.map,
-              position: parkAndRide.geometry.location
-            }));
-            self.markers.push(new google.maps.Marker({
-              icon: "http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=C|68C04C|000000",
-              map: self.map,
-              position: destinationResult.geometry.location
-            }));
-
-            self.map.panToBounds(legOneResult.routes[0].bounds.union(legTwoResult.routes[0].bounds));
-            directionsDeferred.resolve(legOneResult, legTwoResult);
+        .pipe(function (results) {
+          return disambiguate(results, "Park and Ride stops,");
+        }).done(function (parkAndRide) {
+          self.getDirectionsWithLocations(originResult, destinationResult, parkAndRide).done(function () {
+            directionsDeferred.resolve.apply(directionsDeferred, $.makeArray(arguments));
           });
       }).fail(function (parkAndRide) {
         if (parkAndRide == "canceled") {

@@ -2,4 +2,6 @@ temp
 dist
 .sass-cache
 google.js
+live.google.js
+dev.google.js
 npm-debug.log

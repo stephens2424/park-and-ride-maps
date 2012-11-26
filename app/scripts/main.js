@@ -1,10 +1,7 @@
 requirejs.config({
   _shim: {
           'google': {
-            deps: ['async'],
-            init: function () {
-                    console.log("HERE");
-                  }
+            deps: ['async']
           }
         },
   paths: {
@@ -22,7 +19,7 @@ require(['app'], function(ComboMap) {
     var $form = $(this);
     var $inputs = $form.find('input');
 
-    map.getDirections($inputs.eq(0).val(),$inputs.eq(1).val());
+    map.getDirections($inputs.eq(0).val(),$inputs.eq(2).val(),$inputs.eq(1).val());
     return false;
   });
 });
