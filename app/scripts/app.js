@@ -1,4 +1,6 @@
-define(['../components/requirejs-plugins/lib/text!error.html','google'], function(errorHTML) {
+define(['../components/requirejs-plugins/lib/text!../templates/error.html',
+    '../components/requirejs-plugins/lib/text!../templates/addPlaceRequest.html',
+    'google'], function(errorHTML, addPlaceRequestHTML) {
 
   var ComboMap = function (node) {
 
@@ -131,8 +133,7 @@ define(['../components/requirejs-plugins/lib/text!error.html','google'], functio
     this.clearDirections();
   }
 
-  ComboMap.prototype.searchParkAndRide = function (origin, destination) {
-
+  ComboMap.prototype.parkAndRideSearchRequest = function (origin, destination) {
     var distance = google.maps.geometry.spherical.computeDistanceBetween(
         origin.geometry.location,
         destination.geometry.location),
@@ -141,9 +142,18 @@ define(['../components/requirejs-plugins/lib/text!error.html','google'], functio
     var request = {
       radius: distance,
       types: ["bus_station", "subway_station", "train_station", "transit_station"],
-      rankBy: google.maps.places.RankBy.Prominence
-    },
-        originRequest = $.Deferred(),
+      rankBy: google.maps.places.RankBy.PROMINENCE
+    };
+    return request;
+  }
+
+  ComboMap.prototype.searchParkAndRide = function (origin, destination) {
+    return this.searchLocation(this.parkAndRideSearchRequest(origin, destination), origin, destination);
+  }
+
+  ComboMap.prototype.searchLocation = function (request, origin, destination, requestName) {
+
+    var originRequest = $.Deferred(),
         destinationRequest = $.Deferred(),
         originResult = [],
         destinationResult = [];
@@ -165,6 +175,7 @@ define(['../components/requirejs-plugins/lib/text!error.html','google'], functio
       }
     });
 
+    var disambiguation = $.proxy(this.disambiguateLocations,this);
     return $.when(originRequest, destinationRequest).pipe(function (originResults, destinationResults) {
       var originResultsObj = {}
       var commonResults = [];
@@ -180,6 +191,8 @@ define(['../components/requirejs-plugins/lib/text!error.html','google'], functio
         return $.Deferred().reject(commonResults);
       }
       return commonResults;
+    }).pipe(function (results) {
+      return disambiguation(results, requestName);
     });
   }
 
@@ -190,17 +203,38 @@ define(['../components/requirejs-plugins/lib/text!error.html','google'], functio
     }
 
     var directionsDeferred = $.Deferred(),
-        self = this;
-    $.when(this.getLocation(origin, "Origin"), this.getLocation(destination, "Destination"), this.getLocation(midpoint, "Park and Ride location")).done(function (
+        self = this,
+        originRequest = this.getLocation(origin, "Origin"),
+        destinationRequest = this.getLocation(destination, "Destination");
+
+    $.when(originRequest, destinationRequest).done(function (
           originLocation,
-          destinationLocation,
-          midpointLocation) {
-      self.getDirectionsWithLocations(originLocation, destinationLocation, midpointLocation).done(function () {
+          destinationLocation) {
+
+      self.searchLocation($.extend(
+          self.parkAndRideSearchRequest(originLocation, destinationLocation),
+          {
+            keyword: midpoint
+          }),
+        originLocation,
+        destinationLocation,
+        "Park and Ride location").done(function (midpointLocation) {
+
+        if (!self.isKnownParkAndRideLocation(midpointLocation)) {
+          console.log(midpointLocation);
+        }
         directionsDeferred.resolve.apply(directionsDeferred, $.makeArray(arguments));
+        self.getDirectionsWithLocations(originLocation, destinationLocation, midpointLocation);
+      }).fail(function () {
+        self.showError("Could not find midpoint");
       });
     });
 
     return directionsDeferred;
+  }
+
+  ComboMap.prototype.isKnownParkAndRideLocation = function (location) {
+    return false;
   }
 
   ComboMap.prototype.getDirectionsWithLocations = function (originLocation, destinationLocation, midpointLocation) {
@@ -285,6 +319,16 @@ define(['../components/requirejs-plugins/lib/text!error.html','google'], functio
     });
 
     return directionsDeferred;
+  }
+
+  ComboMap.prototype.addPlaceRequest = function (place) {
+    var requestDiv = $(addPlaceRequestHTML);
+    var modal = requestDiv.modal();
+    modal.on('click','.btn-primary', function () {
+      modal.modal('hide');
+      // send add place request
+      console.log("place add request");
+    });
   }
 
   ComboMap.prototype.showError = function (message) {
