@@ -10,6 +10,11 @@
 }
 
 .directions {
+  @extend .hero-unit;
+
+  form {
+    @extend .row;
+  }
 
   .disambiguation {
     width: 35%;
@@ -25,7 +30,6 @@
 
 .mapcontainer {
   @include clearfix;
-  @extend .hero-unit;
 }
 
 .choice {
