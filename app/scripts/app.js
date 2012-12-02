@@ -218,10 +218,13 @@ define(['../components/requirejs-plugins/lib/text!../templates/error.html',
           }),
         originLocation,
         destinationLocation,
-        "Park and Ride location").done(function (midpointLocation) {
+        "Park and Ride location")
+        .pipe(undefined, function () {
+          return self.getLocation(midpoint, midpoint);
+      }).done(function (midpointLocation) {
 
         if (!self.isKnownParkAndRideLocation(midpointLocation)) {
-          console.log(midpointLocation);
+          self.addPlaceRequest(midpointLocation);
         }
         directionsDeferred.resolve.apply(directionsDeferred, $.makeArray(arguments));
         self.getDirectionsWithLocations(originLocation, destinationLocation, midpointLocation);
