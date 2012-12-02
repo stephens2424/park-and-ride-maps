@@ -1,9 +1,8 @@
 @import "compass_twitter_bootstrap";
+@import "compass_twitter_bootstrap_awesome";
+@import "compass_twitter_bootstrap_responsive";
 .mapspace {
   height: 500px;
-  width: 60%;
-  margin-right: 10px;
-  float: right;
   img {
     max-width: none;
   }
@@ -16,16 +15,22 @@
     @extend .row;
   }
 
-  .disambiguation {
-    width: 35%;
-    ul {
-      margin: 0;
-      list-style-type: none;
-    }
+}
+
+.disambiguation {
+  ul {
+    margin: 0;
+    list-style-type: none;
   }
 }
 
-.instructions {
+.resultsWrapper {
+  @extend .row-fluid;
+}
+
+.results {
+}
+.mapWrapper {
 }
 
 .mapcontainer {
