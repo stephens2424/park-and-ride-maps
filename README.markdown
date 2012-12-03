@@ -2,7 +2,7 @@
 
 This web application uses Google Maps APIs to provide park and ride directions. You enter an origin and destination and the application looks for a good place to park and switch to public transportation.
 
-The data sources and searching could use some work, and I'm sure you can find some bugs, but this is just a little weekend project for now. I hope to make it snazzy with some options in the future.
+The data sources and searching could use some work, and I'm sure you can find some bugs, but this is just a little weekend project for now. I hope to make it snazzy with some options in the future. (e.g. a server side component to perform "Place Adds" on the Google Places API).
 
 # Try it out
 
