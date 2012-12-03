@@ -16,7 +16,11 @@ define(['../components/requirejs-plugins/lib/text!../templates/error.html',
         pos = new google.maps.LatLng(position.coords.latitude,
           position.coords.longitude);
         self.map.setCenter(pos);
+      }, function () {
+        self.map.setCenter(new google.maps.LatLng(33.995401, -118.476818));
       });
+    } else {
+      self.map.setCenter(new google.maps.LatLng(33.995401, -118.476818));
     }
 
     this.currentDisambiguation = $.Deferred().resolve();
