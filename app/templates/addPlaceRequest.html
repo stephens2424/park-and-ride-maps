@@ -5,6 +5,20 @@
   </div>
   <div class="modal-body">
     <p>We didn't recognize this place as a Park and Ride location. Would you like to help other travelers and add it to the Google Places database?</p>
+    <form action="javascript:void(0)">
+      <div class="row-fluid">
+        <div class="span6">
+          <label>Name</label>
+          <input type="text" placeholder="required" maxlength="255"/>
+        </div>
+        <div class="span6">
+          <label>Park and Ride type</label>
+          <label class="checkbox"><input type="checkbox" value="bus_station" checked /> Bus</label>
+          <label class="checkbox"><input type="checkbox" value="subway_station" /> Subway</label>
+          <label class="checkbox"><input type="checkbox" value="train_station" /> Train</label>
+        </div>
+      </div>
+    </form>
   </div>
   <div class="modal-footer">
     <button class="btn" data-dismiss="modal" aria-hidden="true">Do not add</button>

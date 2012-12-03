@@ -224,7 +224,8 @@ define(['../components/requirejs-plugins/lib/text!../templates/error.html',
       }).done(function (midpointLocation) {
 
         if (!self.isKnownParkAndRideLocation(midpointLocation)) {
-          self.addPlaceRequest(midpointLocation);
+          // This needs to be implemented with a server side component. TODO
+          //self.addPlaceRequest(midpointLocation);
         }
         directionsDeferred.resolve.apply(directionsDeferred, $.makeArray(arguments));
         self.getDirectionsWithLocations(originLocation, destinationLocation, midpointLocation);
@@ -327,10 +328,27 @@ define(['../components/requirejs-plugins/lib/text!../templates/error.html',
   ComboMap.prototype.addPlaceRequest = function (place) {
     var requestDiv = $(addPlaceRequestHTML);
     var modal = requestDiv.modal();
+    console.log(place);
     modal.on('click','.btn-primary', function () {
+      var name = modal.find('input[type="text"]').val();
+      var types = $.map(modal.find('input[type="checkbox"]:checked'), function (e) {
+        return e.value;
+      });
       modal.modal('hide');
-      // send add place request
-      console.log("place add request");
+      if (name.length > 0 && types.length > 0) {
+        google.addPlace({
+          location: {
+            lat: place.geometry.location.lat(),
+            lng: place.geometry.location.lng()
+          },
+          accuracy: 50,
+          name: name,
+          types: types,
+          language: "en"
+        }).done(function (data) {
+          console.log(data);
+        });
+      }
     });
   }
 
