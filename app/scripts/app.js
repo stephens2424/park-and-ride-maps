@@ -302,11 +302,7 @@ define(['../components/requirejs-plugins/lib/text!../templates/error.html',
 
     $.when(this.getLocation(origin, "Origin"),this.getLocation(destination, "Destination")).done(function (originResult, destinationResult) {
 
-      var disambiguate = $.proxy(self.disambiguateLocations,self);
-      self.searchParkAndRide(originResult, destinationResult)
-        .pipe(function (results) {
-          return disambiguate(results, "Park and Ride stops,");
-        }).done(function (parkAndRide) {
+      self.searchParkAndRide(originResult, destinationResult).done(function (parkAndRide) {
           self.getDirectionsWithLocations(originResult, destinationResult, parkAndRide).done(function () {
             directionsDeferred.resolve.apply(directionsDeferred, $.makeArray(arguments));
           });
