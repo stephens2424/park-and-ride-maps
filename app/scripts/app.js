@@ -42,6 +42,12 @@ define(['../components/requirejs-plugins/lib/text!../templates/error.html',
     });
   };
 
+  /*
+   * Look up a location using the GMaps geocoder
+   *
+   * query: the address to look up
+   * name: a noame for the request, used to track disambiguation
+   */
   ComboMap.prototype.getLocation = function (query, name) {
 
     var request = {
@@ -65,6 +71,12 @@ define(['../components/requirejs-plugins/lib/text!../templates/error.html',
     });
   }
 
+  /*
+   * Prompt the user choose among a set of locations 
+   * 
+   * locationArray: the set of locations to choose from. These are locations from GMaps API
+   * message: the message to display to the user, giving them instructions on what they're choosing
+   */
   ComboMap.prototype.disambiguateLocations = function (locationArray, message) {
     var deferred = $.Deferred(),
         self = this,
@@ -112,6 +124,7 @@ define(['../components/requirejs-plugins/lib/text!../templates/error.html',
     return deferred;
   }
 
+
   ComboMap.prototype.clearMarkers = function () {
     $.map(this.markers,function (e) { e.setMap(null); } );
     this.markers = [];
@@ -137,6 +150,12 @@ define(['../components/requirejs-plugins/lib/text!../templates/error.html',
     this.clearDirections();
   }
 
+  /*
+   * Produces a search query for a suitable park and ride location given an origin and destination
+   *
+   * Parameters are GMaps location objects
+   * Result is a query that can be sent to the GMaps API
+   */
   ComboMap.prototype.parkAndRideSearchRequest = function (origin, destination) {
     var distance = google.maps.geometry.spherical.computeDistanceBetween(
         origin.geometry.location,
@@ -151,10 +170,23 @@ define(['../components/requirejs-plugins/lib/text!../templates/error.html',
     return request;
   }
 
+  /*
+   * Searches for a sutiable park and ride location given an origin and destination
+   * Parameters are GMaps location objects
+   */
   ComboMap.prototype.searchParkAndRide = function (origin, destination) {
     return this.searchLocation(this.parkAndRideSearchRequest(origin, destination), origin, destination);
   }
 
+  /* Sends a nearby search request to the GMaps API, using both an origin and destination location
+   * to bias results. Returns a deferred object. The results are piped through disambiguation,
+   * so the deferred is ultimately resolved with only one reuslt chosen by the user, if necessary.
+   *
+   * request: GMaps API request object
+   * origin: GMaps location object, used for result biasing
+   * destination: GMaps location object, used for result biasing
+   * requestName: String used to track result during disambiguation
+   */
   ComboMap.prototype.searchLocation = function (request, origin, destination, requestName) {
 
     var originRequest = $.Deferred(),
@@ -200,6 +232,11 @@ define(['../components/requirejs-plugins/lib/text!../templates/error.html',
     });
   }
 
+  /*
+   * Get park and ride directions from the origin, to the destination, through the midpoint as th epark and ride stop
+   *
+   * Parameters are string queries
+   */
   ComboMap.prototype.getDirections = function (origin, destination, midpoint) {
 
     if (midpoint == null || midpoint == "") {
@@ -241,10 +278,15 @@ define(['../components/requirejs-plugins/lib/text!../templates/error.html',
     return directionsDeferred;
   }
 
+  /* TODO: use the Google Places API to track known park and ride locations */
   ComboMap.prototype.isKnownParkAndRideLocation = function (location) {
     return false;
   }
 
+  /* Get and display park and ride directions given precise locations
+   *
+   * Parameters are GMaps location objects
+   */
   ComboMap.prototype.getDirectionsWithLocations = function (originLocation, destinationLocation, midpointLocation) {
 
     var directionsDeferred = $.Deferred(),
@@ -298,6 +340,9 @@ define(['../components/requirejs-plugins/lib/text!../templates/error.html',
     return directionsDeferred;
   }
 
+  /* Get park and ride directions. Find a suitable midpoint
+   * Parameters are string queries
+   */
   ComboMap.prototype.getDirectionsWithoutMidpoint = function (origin, destination) {
 
     var self = this,
@@ -325,6 +370,12 @@ define(['../components/requirejs-plugins/lib/text!../templates/error.html',
     return directionsDeferred;
   }
 
+  /*
+   * Ask the user permission to add a given place to the Google Places database. Do it if they say yes.
+   *
+   * The idea is to make it easy for users to contribute and improve results as they make transit choices,
+   * but this is a work in progress.
+   */
   ComboMap.prototype.addPlaceRequest = function (place) {
     var requestDiv = $(addPlaceRequestHTML);
     var modal = requestDiv.modal();
